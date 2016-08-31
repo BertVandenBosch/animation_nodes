@@ -40,7 +40,7 @@ class RunTestFiles(bpy.types.Operator):
                     yield join(root, fileName)
 
     def getTestFileDirectory(self):
-        return join(dirname(dirname(__file__)), "test_files")
+        return join(dirname(dirname(__file__)), "animation_nodes_tests")
 
     def runTestFile(self, path):
         self.loadFile(path)
