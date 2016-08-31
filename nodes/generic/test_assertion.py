@@ -49,6 +49,12 @@ class TestAssertionNode(bpy.types.Node, AnimationNode):
         else:
             self.log(False, "{} != {}".format(a, b))
 
+logFunction = None
+
+def setLogger(function):
+    global logFunction
+    logFunction = function
 
 def logAssertionResult(name, success, message):
-    print("{}: {}   -   {}".format(name, success, message))
+    if logFunction is not None:
+        logFunction(name, success, message)

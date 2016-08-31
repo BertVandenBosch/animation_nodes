@@ -10,6 +10,7 @@
 *.blend*
 .log
 animation_nodes/
+test_files/
 data_structures/lists/base_lists.pxd
 data_structures/lists/base_lists.pyx
 algorithms/lists/convert.pyx
