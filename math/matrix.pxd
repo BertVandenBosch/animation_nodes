@@ -16,24 +16,24 @@ ctypedef fused Matrix3_or_Matrix4:
     Matrix3
     Matrix4
 
-cdef void transformVec3AsPoint_InPlace(Vector3* vector, Matrix4* matrix)
-cdef void transformVec3AsPoint(Vector3* target, Vector3* vector, Matrix4* matrix)
+cdef void transformVec3AsPoint_InPlace(Vector3* vector, Matrix4* matrix) nogil
+cdef void transformVec3AsPoint(Vector3* target, Vector3* vector, Matrix4* matrix) nogil
 
-cdef void transformVec3AsDirection_InPlace(Vector3* v, Matrix4* m)
-cdef void transformVec3AsDirection(Vector3* target, Vector3* v, Matrix4* m)
+cdef void transformVec3AsDirection_InPlace(Vector3* v, Matrix4* m) nogil
+cdef void transformVec3AsDirection(Vector3* target, Vector3* v, Matrix4* m) nogil
 
-cdef void setIdentityMatrix(Matrix3_or_Matrix4* m)
-cdef void setTranslationMatrix(Matrix4* m, Vector3* v)
-cdef void setRotationMatrix(Matrix3_or_Matrix4* m, Euler3* e)
-cdef void setScaleMatrix(Matrix3_or_Matrix4* m, Vector3* s)
+cdef void setIdentityMatrix(Matrix3_or_Matrix4* m) nogil
+cdef void setTranslationMatrix(Matrix4* m, Vector3* v) nogil
+cdef void setRotationMatrix(Matrix3_or_Matrix4* m, Euler3* e) nogil
+cdef void setScaleMatrix(Matrix3_or_Matrix4* m, Vector3* s) nogil
 
-cdef void setTranslationScaleMatrix(Matrix4* m, Vector3* t, Vector3* s)
-cdef void setRotationScaleMatrix(Matrix3_or_Matrix4* m, Euler3* e, Vector3* s)
-cdef void setTranslationRotationScaleMatrix(Matrix4* m, Vector3* t, Euler3* e, Vector3* s)
+cdef void setTranslationScaleMatrix(Matrix4* m, Vector3* t, Vector3* s) nogil
+cdef void setRotationScaleMatrix(Matrix3_or_Matrix4* m, Euler3* e, Vector3* s) nogil
+cdef void setTranslationRotationScaleMatrix(Matrix4* m, Vector3* t, Euler3* e, Vector3* s) nogil
 
-cdef void convertMatrix3ToMatrix4(Matrix4* t, Matrix3* s)
-cdef void convertMatrix4ToMatrix3(Matrix3* t, Matrix4* s)
+cdef void convertMatrix3ToMatrix4(Matrix4* t, Matrix3* s) nogil
+cdef void convertMatrix4ToMatrix3(Matrix3* t, Matrix4* s) nogil
 
-cdef void multMatrix3(Matrix3_or_Matrix4* target, Matrix3_or_Matrix4* x, Matrix3_or_Matrix4* y)
-cdef void multMatrix4(Matrix4* target, Matrix4* x, Matrix4* y)
-cdef void multMatrix3Parts(Matrix4* target, Matrix4* x, Matrix4* y, bint keepFirst = ?)
+cdef void multMatrix3(Matrix3_or_Matrix4* target, Matrix3_or_Matrix4* x, Matrix3_or_Matrix4* y) nogil
+cdef void multMatrix4(Matrix4* target, Matrix4* x, Matrix4* y) nogil
+cdef void multMatrix3Parts(Matrix4* target, Matrix4* x, Matrix4* y, bint keepFirst = ?) nogil

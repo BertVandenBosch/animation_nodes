@@ -1,8 +1,12 @@
+# distutils: extra_compile_args = -fopenmp
+# distutils: extra_link_args = -fopenmp
+
 import bpy
+from cython.parallel cimport prange
 from bpy.props import *
 from ... events import propertyChanged
 from ... base_types.node import AnimationNode
-from ... data_structures cimport FalloffEvaluator
+from ... data_structures cimport FalloffEvaluator, FloatList
 from ... math cimport (Matrix4, Vector3, Euler3, Matrix4x4List, toVector3, toEuler3,
                        multMatrix4, toPyMatrix4, setTranslationRotationScaleMatrix,
                        convertMatrix4ToMatrix3, multMatrix3, setRotationScaleMatrix,
@@ -71,7 +75,7 @@ class OffsetTransformationsNode(bpy.types.Node, AnimationNode):
             Euler3 localRotation
             Matrix4 result
             double influence
-            long i
+            Py_ssize_t i
 
         cdef:
             bint axisRotation = self.axisRotation
@@ -86,8 +90,14 @@ class OffsetTransformationsNode(bpy.types.Node, AnimationNode):
 
         localRotation.order = _rotation.order
 
-        for i in range(len(transformations)):
-            influence = evaluator.evaluate(transformations.data + i, i)
+        cdef size_t amount = len(transformations)
+
+        cdef FloatList influences = FloatList(length = amount)
+        for i in range(amount):
+            influences.data[i] = evaluator.evaluate(transformations.data + i, i)
+
+        for i in prange(amount, nogil = True, schedule = "static", chunksize = 10000):
+            influence = influences.data[i]
 
             localTranslation.x = _translation.x * influence
             localTranslation.y = _translation.y * influence
@@ -113,7 +123,7 @@ class OffsetTransformationsNode(bpy.types.Node, AnimationNode):
 cdef void applyTransformation(Matrix4* target, Matrix4* source,
                      Vector3* translation, Euler3* rotation, Vector3* scale,
                      bint localTranslation, bint localRotation, bint localScale,
-                     bint axisRotation, bint axisScale):
+                     bint axisRotation, bint axisScale) nogil:
 
     cdef Matrix4 afterScale, afterRotation
     applyScale(&afterScale, source, scale, localScale, axisScale)
@@ -121,7 +131,7 @@ cdef void applyTransformation(Matrix4* target, Matrix4* source,
     applyTranslation(target, &afterRotation, source, translation, localTranslation)
 
 cdef void applyScale(Matrix4* target, Matrix4* source,
-                     Vector3* scale, bint localScale, bint axisScale):
+                     Vector3* scale, bint localScale, bint axisScale) nogil:
     cdef Matrix4 scaleMatrix
     setScaleMatrix(&scaleMatrix, scale)
     if localScale:
@@ -136,7 +146,7 @@ cdef void applyScale(Matrix4* target, Matrix4* source,
             multMatrix3Parts(target, &scaleMatrix, source, keepFirst = False)
 
 cdef void applyRotation(Matrix4* target, Matrix4* source,
-                        Euler3* rotation, bint localRotation, bint axisRotation):
+                        Euler3* rotation, bint localRotation, bint axisRotation) nogil:
     cdef Matrix4 rotationMatrix
     setRotationMatrix(&rotationMatrix, rotation)
     if localRotation:
@@ -151,7 +161,7 @@ cdef void applyRotation(Matrix4* target, Matrix4* source,
             multMatrix3Parts(target, &rotationMatrix, source, keepFirst = False)
 
 cdef void applyTranslation(Matrix4* target, Matrix4* source, Matrix4* original,
-                           Vector3* translation, bint localTranslation):
+                           Vector3* translation, bint localTranslation) nogil:
     cdef Matrix4 translationMatrix
     cdef Vector3 offsetTranslation
     if localTranslation:
