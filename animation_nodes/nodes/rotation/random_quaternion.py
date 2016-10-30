@@ -18,7 +18,7 @@ class RandomQuaternionNode(bpy.types.Node, AnimationNode):
         layout.prop(self, "nodeSeed")
 
     def getExecutionCode(self):
-        yield "randomQuaternion = Quaternion(algorithms.random.randomNumberTuple(seed + 24523 * self.nodeSeed, 4, math.pi))"
+        yield "randomQuaternion = Quaternion(algorithms.random.getRandomNumberTuple(seed + 24523 * self.nodeSeed, 4, math.pi))"
         yield "randomQuaternion.normalize()"
 
     def getUsedModules(self):
