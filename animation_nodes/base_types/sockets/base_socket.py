@@ -50,8 +50,8 @@ class AnimationNodeSocket:
     moveable = BoolProperty(default = False)
     moveGroup = IntProperty(default = 0)
 
-    isUsed = BoolProperty(name = "Is Used", default = True,
-        description = "Enable this socket (orange point means that the socket will be evaluated)",
+    isUsed = BoolProperty(name = "Is Used", default = False,
+        description = "Enable this socket.",
         update = executionCodeChanged)
     useIsUsedProperty = BoolProperty(default = False)
 
@@ -102,7 +102,7 @@ class AnimationNodeSocket:
         if self.textProps.editable and self.display.textInput:
             row.prop(self, "text", text = "")
         else:
-            if self.isInput and self.isUnlinked and self.isUsed:
+            if self.isInput and self.isUnlinked and (self.isUsed or not self.useIsUsedProperty):
                 self.drawSocket(row, displayText, node, self.defaultDrawType)
             else:
                 if self.isOutput: row.alignment = "RIGHT"
