@@ -36,12 +36,11 @@ def createNodes(nodeTree, nodesData):
     return nodes
 
 def createNode(nodeTree, nodeData):
-    node = nodeTree.nodes.new(nodeData["data"]["bl_idname"])
-    node.name = nodeData["data"]["name"]
-    node.location = nodeData["location"]
-    setProperties(node, nodeData["data"]["properties"])
-    setSocketProperties(node.inputs, nodeData["data"]["sockets"]["inputs"])
-    setSocketProperties(node.outputs, nodeData["data"]["sockets"]["outputs"])
+    node = nodeTree.nodes.new(nodeData["bl_idname"])
+    node.name = nodeData["name"]
+    setProperties(node, nodeData["properties"])
+    setSocketProperties(node.inputs, nodeData["sockets"]["inputs"])
+    setSocketProperties(node.outputs, nodeData["sockets"]["outputs"])
     return node
 
 def setSocketProperties(sockets, socketData):

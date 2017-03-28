@@ -58,12 +58,6 @@ def jsonFromNodes(nodes):
 
 def jsonFromNode(node):
     return {
-        "location" : (node.location.x, node.location.y),
-        "data" : jsonFromNodeData(node)
-    }
-
-def jsonFromNodeData(node):
-    return {
         "bl_idname" : node.bl_idname,
         "name" : node.name,
         "properties" : jsonFromNodeProperties(node),
@@ -77,8 +71,7 @@ def jsonFromNodeProperties(node):
     nodeProperties = {}
     for prop in node.bl_rna.properties:
         if prop.identifier not in ignoredNodeAttributes:
-            if not doesPropertyEqualDefault(node, prop):
-                nodeProperties[prop.identifier] = serializeProperty(node, prop, True)
+            nodeProperties[prop.identifier] = serializeProperty(node, prop)
     return nodeProperties
 
 def serializeProperty(owner, prop, skipDefaultSubProps = False):
