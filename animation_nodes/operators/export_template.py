@@ -1,5 +1,6 @@
 import bpy
 import json
+from bpy.props import *
 from . an_operator import AnimationNodeOperator
 from .. preferences import getAnimationNodesVersion
 from .. base_types.nodes.base_node import callSaveMethods
@@ -8,27 +9,38 @@ class ExportTemplate(bpy.types.Operator, AnimationNodeOperator):
     bl_idname = "an.export_template"
     bl_label = "Export Template"
 
+    filepath = StringProperty(subtype = "FILE_PATH")
+    filename = StringProperty()
+
+    def invoke(self, context, event):
+        self.filename = "template.json"
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
     def execute(self, context):
         callSaveMethods()
-        nodeTree = context.space_data.node_tree
+        nodeTree = context.getActiveAnimationNodeTree()
         nodes = getSelectedNodes(nodeTree)
-        jsonDict = jsonFromNodes(nodeTree, nodes)
-        print(json.dumps(jsonDict, sort_keys = True, indent = 4))
+        template = createTemplateJson(nodeTree, nodes)
+        text = json.dumps(template, sort_keys = True, indent = 4)
+
+        with open(self.filepath, "w") as textFile:
+            textFile.write(text)
+
         return {"FINISHED"}
 
 def getSelectedNodes(nodeTree):
     return {node for node in nodeTree.nodes if node.select}
 
-def jsonFromNodes(nodeTree, nodes):
+def createTemplateJson(nodeTree, nodes):
     links = getLinksBetweenNodes(nodeTree, nodes)
+    orderedNodes = list(nodes)
     template = {
         "version" : getAnimationNodesVersion(),
-        "nodes" : {},
-        "links" : []
+        "nodes" : jsonFromNodes(orderedNodes),
+        "links" : jsonFromLinks(links, orderedNodes)
         }
-    orderedNodes = list(nodes)
-    for i, node in enumerate(orderedNodes):
-        template["nodes"][i] = jsonFromNode(node)
+
     return template
 
 def getLinksBetweenNodes(nodeTree, nodes):
@@ -37,6 +49,12 @@ def getLinksBetweenNodes(nodeTree, nodes):
         if link.from_node in nodes and link.to_node in nodes:
             links.add(link)
     return links
+
+def jsonFromNodes(nodes):
+    data = []
+    for i, node in enumerate(nodes):
+        data.append(jsonFromNode(node))
+    return data
 
 def jsonFromNode(node):
     return {
@@ -60,10 +78,10 @@ def jsonFromNodeProperties(node):
     for prop in node.bl_rna.properties:
         if prop.identifier not in ignoredNodeAttributes:
             if not doesPropertyEqualDefault(node, prop):
-                nodeProperties[prop.identifier] = serializeProperty(node, prop)
+                nodeProperties[prop.identifier] = serializeProperty(node, prop, True)
     return nodeProperties
 
-def serializeProperty(owner, prop):
+def serializeProperty(owner, prop, skipDefaultSubProps = False):
     identifier = prop.identifier
     if prop.type in ("BOOLEAN", "INT", "FLOAT"):
         if prop.array_length <= 1:
@@ -73,29 +91,31 @@ def serializeProperty(owner, prop):
     elif prop.type in ("STRING", "ENUM"):
         return getattr(owner, identifier)
     elif prop.type == "POINTER":
-        return serializePointerProperty(owner, prop)
+        return serializePointerProperty(owner, prop, skipDefaultSubProps)
     elif prop.type == "COLLECTION":
-        return serializeCollectionProperty(owner, prop)
+        return serializeCollectionProperty(owner, prop, skipDefaultSubProps)
     return "unknown type"
 
-def serializeCollectionProperty(owner, prop):
+def serializeCollectionProperty(owner, prop, skipDefaults = False):
     collectionType = getCollectionType(prop)
     elements = []
     for item in getattr(owner, prop.identifier):
         element = {}
         for _prop in collectionType.bl_rna.properties:
             if _prop.identifier == "rna_type": continue
-            element[_prop.identifier] = serializeProperty(item, _prop)
+            if skipDefaults and doesPropertyEqualDefault(item, _prop): continue
+            element[_prop.identifier] = serializeProperty(item, _prop, skipDefaults)
         elements.append(element)
     return elements
 
-def serializePointerProperty(owner, prop):
+def serializePointerProperty(owner, prop, skipDefaults = False):
     pointerType = getPointerType(prop)
     data = {}
     _owner = getattr(owner, prop.identifier)
     for _prop in pointerType.bl_rna.properties:
         if _prop.identifier == "rna_type": continue
-        data[_prop.identifier] = serializeProperty(_owner, _prop)
+        if skipDefaults and doesPropertyEqualDefault(_owner, _prop): continue
+        data[_prop.identifier] = serializeProperty(_owner, _prop, skipDefaults)
     return data
 
 def getCollectionType(prop):
@@ -115,11 +135,18 @@ def jsonFromNodeSockets(sockets):
     return elements
 
 def jsonFromNodeSocket(socket):
+    return {
+        "bl_idname" : socket.bl_idname,
+        "identifier" : socket.identifier,
+        "properties" : jsonFromSocketProperties(socket)
+    }
+
+def jsonFromSocketProperties(socket):
     socketProperties = {}
     for prop in socket.bl_rna.properties:
         if prop.identifier not in ignoredSocketAttributes:
             if not doesPropertyEqualDefault(socket, prop):
-                socketProperties[prop.identifier] = serializeProperty(socket, prop)
+                socketProperties[prop.identifier] = serializeProperty(socket, prop, True)
     return socketProperties
 
 def doesPropertyEqualDefault(owner, prop):
@@ -137,6 +164,26 @@ def doesPropertyEqualDefault(owner, prop):
         return True
     elif prop.type == "COLLECTION":
         return False
+
+def jsonFromLinks(links, nodes):
+    indexByNode = {node : i for i, node in enumerate(nodes)}
+    data = []
+    for link in links:
+        data.append(jsonFromLink(link, indexByNode))
+    return data
+
+def jsonFromLink(link, indexByNode):
+    return {
+        "from" : {
+            "node" : indexByNode[link.from_node],
+            "socket" : list(link.from_node.outputs).index(link.from_socket)
+        },
+        "to" : {
+            "node" : indexByNode[link.to_node],
+            "socket" : list(link.to_node.inputs).index(link.to_socket)
+        }
+    }
+
 
 def getIgnoredNodeAttributes():
     attributes = {prop.identifier for prop in bpy.types.Node.bl_rna.properties}
