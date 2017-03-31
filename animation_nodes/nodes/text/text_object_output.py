@@ -108,3 +108,6 @@ class TextObjectOutputNode(bpy.types.Node, AnimationNode):
         if s["X Offset"].isUsed:            yield "    textObject.keyframe_insert('offset_x')"
         if s["Y Offset"].isUsed:            yield "    textObject.keyframe_insert('offset_y')"
         if s["Align"].isUsed:               yield "    textObject.keyframe_insert('align')"
+
+    def getUsedSocketProperties(self):
+        return ["isUsed"]

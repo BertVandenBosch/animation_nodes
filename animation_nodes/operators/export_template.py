@@ -62,8 +62,8 @@ def jsonFromNode(node):
         "name" : node.name,
         "properties" : jsonFromNodeProperties(node),
         "sockets" : {
-            "inputs" :jsonFromNodeSockets(node.inputs),
-            "outputs" : jsonFromNodeSockets(node.outputs)
+            "inputs" :jsonFromNodeSockets(node, node.inputs),
+            "outputs" : jsonFromNodeSockets(node, node.outputs)
         }
     }
 
@@ -121,25 +121,26 @@ def getPointerType(prop):
     return getattr(bpy.types, prop.fixed_type.identifier)
 
 
-def jsonFromNodeSockets(sockets):
+def jsonFromNodeSockets(node, sockets):
     elements = []
     for socket in sockets:
-        elements.append(jsonFromNodeSocket(socket))
+        elements.append(jsonFromNodeSocket(node, socket))
     return elements
 
-def jsonFromNodeSocket(socket):
+def jsonFromNodeSocket(node, socket):
+    propNames = node.getUsedSocketProperties()
     return {
         "bl_idname" : socket.bl_idname,
         "identifier" : socket.identifier,
-        "properties" : jsonFromSocketProperties(socket)
+        "value" : socket.getProperty(),
+        "properties" : jsonFromSocketProperties(socket, propNames)
     }
 
-def jsonFromSocketProperties(socket):
+def jsonFromSocketProperties(socket, propNames):
     socketProperties = {}
     for prop in socket.bl_rna.properties:
-        if prop.identifier not in ignoredSocketAttributes:
-            if not doesPropertyEqualDefault(socket, prop):
-                socketProperties[prop.identifier] = serializeProperty(socket, prop, True)
+        if prop.identifier in propNames:
+            socketProperties[prop.identifier] = serializeProperty(socket, prop, True)
     return socketProperties
 
 def doesPropertyEqualDefault(owner, prop):

@@ -120,6 +120,9 @@ class AnimationNode:
     def getUsedModules(self):
         return []
 
+    def getUsedSocketProperties(self):
+        return []
+
     def drawControlSocket(self, layout, socket):
         layout.alignment = "LEFT" if socket.isInput else "RIGHT"
         layout.label(socket.name)
